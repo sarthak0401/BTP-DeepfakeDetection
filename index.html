@@ -1136,6 +1136,298 @@ footer {
   }
 }
     </style>
+
+
+
+   <script>
+
+      document.addEventListener("DOMContentLoaded", function () {
+  // All your existing JavaScript code goes here (tabs, FAQ, testimonial slider)
+
+  // Tab Functionality
+  console.log("Tabs initialized");
+  const tabBtns = document.querySelectorAll(".tab-btn");
+  const tabContents = document.querySelectorAll(".tab-content");
+
+  tabBtns.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const tabId = btn.getAttribute("data-tab");
+      console.log(`Tab clicked: ${btn.dataset.tab}`);
+
+      // Remove active class from all buttons and contents
+      tabBtns.forEach((btn) => btn.classList.remove("active"));
+      tabContents.forEach((content) => content.classList.remove("active"));
+
+      // Add active class to current button and content
+      btn.classList.add("active");
+      document.getElementById(`${tabId}-tab`).classList.add("active");
+    });
+  });
+
+  // FAQ Accordion
+  const faqItems = document.querySelectorAll(".faq-item");
+
+  faqItems.forEach((item) => {
+    const question = item.querySelector(".faq-question");
+
+    question.addEventListener("click", () => {
+      // Toggle current item
+      item.classList.toggle("active");
+
+      // Close other items
+      faqItems.forEach((otherItem) => {
+        if (otherItem !== item) {
+          otherItem.classList.remove("active");
+        }
+      });
+    });
+  });
+
+  // Testimonial Slider
+  const slidesContainer = document.querySelector(".testimonial-slides");
+  const slides = document.querySelectorAll(".testimonial-slide");
+  const prevBtn = document.getElementById("prev-slide");
+  const nextBtn = document.getElementById("next-slide");
+  let currentSlide = 0;
+
+  function goToSlide(slideIndex) {
+    if (slideIndex < 0) {
+      slideIndex = slides.length - 1;
+    } else if (slideIndex >= slides.length) {
+      slideIndex = 0;
+    }
+
+    currentSlide = slideIndex;
+    const translateValue = -currentSlide * 100 + "%";
+    slidesContainer.style.transform = `translateX(${translateValue})`;
+  }
+
+  if (prevBtn && nextBtn) {
+    prevBtn.addEventListener("click", () => {
+      goToSlide(currentSlide - 1);
+    });
+
+    nextBtn.addEventListener("click", () => {
+      goToSlide(currentSlide + 1);
+    });
+
+    // Auto-advance slides every 5 seconds
+    setInterval(() => {
+      goToSlide(currentSlide + 1);
+    }, 5000);
+  }
+
+  // Smooth scrolling for navigation links
+  document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
+    anchor.addEventListener("click", function (e) {
+      e.preventDefault();
+
+      const targetId = this.getAttribute("href");
+      if (targetId === "#") return;
+
+      const targetElement = document.querySelector(targetId);
+      if (targetElement) {
+        window.scrollTo({
+          top: targetElement.offsetTop - 100,
+          behavior: "smooth",
+        });
+      }
+    });
+  });
+
+  // Animate elements on scroll
+  const animateOnScroll = () => {
+    const elements = document.querySelectorAll(
+      ".feature-card, .step, .statistic-card, .upload-section"
+    );
+
+    elements.forEach((element) => {
+      const elementPosition = element.getBoundingClientRect().top;
+      const screenPosition = window.innerHeight / 1.2;
+
+      if (elementPosition < screenPosition) {
+        element.classList.add("animate__animated", "animate__fadeInUp");
+      }
+    });
+  };
+
+  window.addEventListener("scroll", animateOnScroll);
+
+  // Initialize animations
+  animateOnScroll();
+
+  // NEW CODE FOR DEEPFAKE DETECTOR FUNCTIONALITY
+  const uploadArea = document.getElementById("upload-area");
+  const fileInput = document.getElementById("file-input");
+  const uploadForm = document.getElementById("upload-form");
+  const analyzeBtn = document.getElementById("analyze-btn");
+  const resetBtn = document.getElementById("reset-btn");
+  const resultsSection = document.getElementById("results-section");
+  const heroDetectorBtn = document.getElementById("hero-detector-btn");
+  const statusBadge = document.getElementById("status-badge");
+  const confidenceText = document.getElementById("confidence-text");
+  const confidenceValue = document.getElementById("confidence-value");
+  const resultDescription = document.getElementById("result-description");
+  const metricsGrid = document.getElementById("metrics-grid");
+  const resultImagePreview = document.getElementById("result-image-preview");
+  const csrfToken = document.querySelector("[name=csrfmiddlewaretoken]").value;
+
+  // File Upload Handling
+  if (uploadArea) {
+    uploadArea.addEventListener("click", () => {
+      fileInput.click();
+    });
+
+    fileInput.addEventListener("change", (e) => {
+      if (fileInput.files.length > 0) {
+        uploadArea.classList.add("has-file");
+        uploadArea.querySelector(".upload-label").textContent =
+          fileInput.files[0].name;
+      }
+    });
+
+    uploadArea.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      uploadArea.classList.add("active");
+    });
+
+    uploadArea.addEventListener("dragleave", () => {
+      uploadArea.classList.remove("active");
+    });
+
+    uploadArea.addEventListener("drop", (e) => {
+      e.preventDefault();
+      uploadArea.classList.remove("active");
+
+      if (e.dataTransfer.files.length > 0) {
+        fileInput.files = e.dataTransfer.files;
+        uploadArea.classList.add("has-file");
+        uploadArea.querySelector(".upload-label").textContent =
+          fileInput.files[0].name;
+      }
+    });
+  }
+
+  // Analysis Button Click
+  if (analyzeBtn) {
+    analyzeBtn.addEventListener("click", () => {
+      if (fileInput.files.length === 0) {
+        alert("Please select a file to analyze");
+        return;
+      }
+
+      // Show results section with loading state
+      resultsSection.style.display = "block";
+      statusBadge.className = "status-badge analyzing";
+      statusBadge.innerHTML =
+        '<i class="fas fa-spinner fa-spin"></i> Analyzing...';
+      confidenceText.textContent = "Confidence: --";
+      confidenceValue.style.width = "0%";
+      resultDescription.textContent = "Your media is being analyzed...";
+      metricsGrid.innerHTML =
+        '<div class="loading">Processing your media...</div>';
+
+      window.scrollTo({
+        top: resultsSection.offsetTop - 100,
+        behavior: "smooth",
+      });
+
+      // Create form data and send to server
+      const formData = new FormData();
+      formData.append("media_file", fileInput.files[0]);
+      formData.append("csrfmiddlewaretoken", csrfToken);
+
+      // Display file preview if it's an image
+      const file = fileInput.files[0];
+      if (file.type.startsWith("image/")) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          resultImagePreview.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      } else {
+        // For videos, show a placeholder
+        resultImagePreview.src = "/static/placeholder.jpg";
+      }
+
+      // Send to server
+      fetch("/analyze/", {
+        method: "POST",
+        body: formData,
+        // Don't need to set Content-Type with FormData
+      })
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error("Network response was not ok");
+          }
+          return response.json();
+        })
+        .then((data) => {
+          // Update UI with results
+          confidenceText.textContent = `Confidence: ${data.confidence}%`;
+          confidenceValue.style.width = `${data.confidence}%`;
+
+          if (data.is_deepfake) {
+            statusBadge.className = "status-badge fake";
+            statusBadge.innerHTML =
+              '<i class="fas fa-exclamation-triangle"></i> Likely Deepfake';
+            resultDescription.textContent =
+              "Our analysis indicates this media has likely been manipulated using AI technology. Several indicators of manipulation were detected.";
+          } else {
+            statusBadge.className = "status-badge real";
+            statusBadge.innerHTML =
+              '<i class="fas fa-check-circle"></i> Likely Authentic';
+            resultDescription.textContent =
+              "Our analysis indicates this media is likely authentic. No significant indicators of manipulation were detected.";
+          }
+
+          // Update metrics
+          metricsGrid.innerHTML = "";
+          for (const [key, value] of Object.entries(data.metrics)) {
+            metricsGrid.innerHTML += `
+                        <div class="metric-item">
+                            <div class="metric-label">${key}</div>
+                            <div class="metric-value">${value}</div>
+                        </div>
+                    `;
+          }
+        })
+        .catch((error) => {
+          console.error("Error:", error);
+          statusBadge.className = "status-badge error";
+          statusBadge.innerHTML =
+            '<i class="fas fa-exclamation-circle"></i> Analysis Error';
+          resultDescription.textContent =
+            "There was an error analyzing your media. Please try again.";
+          metricsGrid.innerHTML =
+            '<div class="error">Error processing your request</div>';
+        });
+    });
+  }
+
+  // Reset Button Click
+  if (resetBtn) {
+    resetBtn.addEventListener("click", () => {
+      resultsSection.style.display = "none";
+      fileInput.value = "";
+      uploadArea.classList.remove("has-file");
+      uploadArea.querySelector(".upload-label").textContent =
+        "Drag and drop your file here";
+    });
+  }
+
+  // Hero Button Click
+  if (heroDetectorBtn) {
+    heroDetectorBtn.addEventListener("click", () => {
+      window.scrollTo({
+        top: document.getElementById("detector").offsetTop - 100,
+        behavior: "smooth",
+      });
+    });
+  }
+});
+
+    </script>
   </head>
   <body>
     <header>
@@ -1189,7 +1481,7 @@ footer {
           </div>
         </div>
         <img
-          src="{% static 'images/dpfake.png' %}"
+          src="dpfake.png"
           alt="Deepfake Detection Illustration"
           class="hero-image"
         />
@@ -1793,295 +2085,5 @@ footer {
         </div>
       </div>
     </footer>
-
-    <script>
-
-      document.addEventListener("DOMContentLoaded", function () {
-  // All your existing JavaScript code goes here (tabs, FAQ, testimonial slider)
-
-  // Tab Functionality
-  console.log("Tabs initialized");
-  const tabBtns = document.querySelectorAll(".tab-btn");
-  const tabContents = document.querySelectorAll(".tab-content");
-
-  tabBtns.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const tabId = btn.getAttribute("data-tab");
-      console.log(`Tab clicked: ${btn.dataset.tab}`);
-
-      // Remove active class from all buttons and contents
-      tabBtns.forEach((btn) => btn.classList.remove("active"));
-      tabContents.forEach((content) => content.classList.remove("active"));
-
-      // Add active class to current button and content
-      btn.classList.add("active");
-      document.getElementById(`${tabId}-tab`).classList.add("active");
-    });
-  });
-
-  // FAQ Accordion
-  const faqItems = document.querySelectorAll(".faq-item");
-
-  faqItems.forEach((item) => {
-    const question = item.querySelector(".faq-question");
-
-    question.addEventListener("click", () => {
-      // Toggle current item
-      item.classList.toggle("active");
-
-      // Close other items
-      faqItems.forEach((otherItem) => {
-        if (otherItem !== item) {
-          otherItem.classList.remove("active");
-        }
-      });
-    });
-  });
-
-  // Testimonial Slider
-  const slidesContainer = document.querySelector(".testimonial-slides");
-  const slides = document.querySelectorAll(".testimonial-slide");
-  const prevBtn = document.getElementById("prev-slide");
-  const nextBtn = document.getElementById("next-slide");
-  let currentSlide = 0;
-
-  function goToSlide(slideIndex) {
-    if (slideIndex < 0) {
-      slideIndex = slides.length - 1;
-    } else if (slideIndex >= slides.length) {
-      slideIndex = 0;
-    }
-
-    currentSlide = slideIndex;
-    const translateValue = -currentSlide * 100 + "%";
-    slidesContainer.style.transform = `translateX(${translateValue})`;
-  }
-
-  if (prevBtn && nextBtn) {
-    prevBtn.addEventListener("click", () => {
-      goToSlide(currentSlide - 1);
-    });
-
-    nextBtn.addEventListener("click", () => {
-      goToSlide(currentSlide + 1);
-    });
-
-    // Auto-advance slides every 5 seconds
-    setInterval(() => {
-      goToSlide(currentSlide + 1);
-    }, 5000);
-  }
-
-  // Smooth scrolling for navigation links
-  document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
-    anchor.addEventListener("click", function (e) {
-      e.preventDefault();
-
-      const targetId = this.getAttribute("href");
-      if (targetId === "#") return;
-
-      const targetElement = document.querySelector(targetId);
-      if (targetElement) {
-        window.scrollTo({
-          top: targetElement.offsetTop - 100,
-          behavior: "smooth",
-        });
-      }
-    });
-  });
-
-  // Animate elements on scroll
-  const animateOnScroll = () => {
-    const elements = document.querySelectorAll(
-      ".feature-card, .step, .statistic-card, .upload-section"
-    );
-
-    elements.forEach((element) => {
-      const elementPosition = element.getBoundingClientRect().top;
-      const screenPosition = window.innerHeight / 1.2;
-
-      if (elementPosition < screenPosition) {
-        element.classList.add("animate__animated", "animate__fadeInUp");
-      }
-    });
-  };
-
-  window.addEventListener("scroll", animateOnScroll);
-
-  // Initialize animations
-  animateOnScroll();
-
-  // NEW CODE FOR DEEPFAKE DETECTOR FUNCTIONALITY
-  const uploadArea = document.getElementById("upload-area");
-  const fileInput = document.getElementById("file-input");
-  const uploadForm = document.getElementById("upload-form");
-  const analyzeBtn = document.getElementById("analyze-btn");
-  const resetBtn = document.getElementById("reset-btn");
-  const resultsSection = document.getElementById("results-section");
-  const heroDetectorBtn = document.getElementById("hero-detector-btn");
-  const statusBadge = document.getElementById("status-badge");
-  const confidenceText = document.getElementById("confidence-text");
-  const confidenceValue = document.getElementById("confidence-value");
-  const resultDescription = document.getElementById("result-description");
-  const metricsGrid = document.getElementById("metrics-grid");
-  const resultImagePreview = document.getElementById("result-image-preview");
-  const csrfToken = document.querySelector("[name=csrfmiddlewaretoken]").value;
-
-  // File Upload Handling
-  if (uploadArea) {
-    uploadArea.addEventListener("click", () => {
-      fileInput.click();
-    });
-
-    fileInput.addEventListener("change", (e) => {
-      if (fileInput.files.length > 0) {
-        uploadArea.classList.add("has-file");
-        uploadArea.querySelector(".upload-label").textContent =
-          fileInput.files[0].name;
-      }
-    });
-
-    uploadArea.addEventListener("dragover", (e) => {
-      e.preventDefault();
-      uploadArea.classList.add("active");
-    });
-
-    uploadArea.addEventListener("dragleave", () => {
-      uploadArea.classList.remove("active");
-    });
-
-    uploadArea.addEventListener("drop", (e) => {
-      e.preventDefault();
-      uploadArea.classList.remove("active");
-
-      if (e.dataTransfer.files.length > 0) {
-        fileInput.files = e.dataTransfer.files;
-        uploadArea.classList.add("has-file");
-        uploadArea.querySelector(".upload-label").textContent =
-          fileInput.files[0].name;
-      }
-    });
-  }
-
-  // Analysis Button Click
-  if (analyzeBtn) {
-    analyzeBtn.addEventListener("click", () => {
-      if (fileInput.files.length === 0) {
-        alert("Please select a file to analyze");
-        return;
-      }
-
-      // Show results section with loading state
-      resultsSection.style.display = "block";
-      statusBadge.className = "status-badge analyzing";
-      statusBadge.innerHTML =
-        '<i class="fas fa-spinner fa-spin"></i> Analyzing...';
-      confidenceText.textContent = "Confidence: --";
-      confidenceValue.style.width = "0%";
-      resultDescription.textContent = "Your media is being analyzed...";
-      metricsGrid.innerHTML =
-        '<div class="loading">Processing your media...</div>';
-
-      window.scrollTo({
-        top: resultsSection.offsetTop - 100,
-        behavior: "smooth",
-      });
-
-      // Create form data and send to server
-      const formData = new FormData();
-      formData.append("media_file", fileInput.files[0]);
-      formData.append("csrfmiddlewaretoken", csrfToken);
-
-      // Display file preview if it's an image
-      const file = fileInput.files[0];
-      if (file.type.startsWith("image/")) {
-        const reader = new FileReader();
-        reader.onload = function (e) {
-          resultImagePreview.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
-      } else {
-        // For videos, show a placeholder
-        resultImagePreview.src = "/static/placeholder.jpg";
-      }
-
-      // Send to server
-      fetch("/analyze/", {
-        method: "POST",
-        body: formData,
-        // Don't need to set Content-Type with FormData
-      })
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error("Network response was not ok");
-          }
-          return response.json();
-        })
-        .then((data) => {
-          // Update UI with results
-          confidenceText.textContent = `Confidence: ${data.confidence}%`;
-          confidenceValue.style.width = `${data.confidence}%`;
-
-          if (data.is_deepfake) {
-            statusBadge.className = "status-badge fake";
-            statusBadge.innerHTML =
-              '<i class="fas fa-exclamation-triangle"></i> Likely Deepfake';
-            resultDescription.textContent =
-              "Our analysis indicates this media has likely been manipulated using AI technology. Several indicators of manipulation were detected.";
-          } else {
-            statusBadge.className = "status-badge real";
-            statusBadge.innerHTML =
-              '<i class="fas fa-check-circle"></i> Likely Authentic';
-            resultDescription.textContent =
-              "Our analysis indicates this media is likely authentic. No significant indicators of manipulation were detected.";
-          }
-
-          // Update metrics
-          metricsGrid.innerHTML = "";
-          for (const [key, value] of Object.entries(data.metrics)) {
-            metricsGrid.innerHTML += `
-                        <div class="metric-item">
-                            <div class="metric-label">${key}</div>
-                            <div class="metric-value">${value}</div>
-                        </div>
-                    `;
-          }
-        })
-        .catch((error) => {
-          console.error("Error:", error);
-          statusBadge.className = "status-badge error";
-          statusBadge.innerHTML =
-            '<i class="fas fa-exclamation-circle"></i> Analysis Error';
-          resultDescription.textContent =
-            "There was an error analyzing your media. Please try again.";
-          metricsGrid.innerHTML =
-            '<div class="error">Error processing your request</div>';
-        });
-    });
-  }
-
-  // Reset Button Click
-  if (resetBtn) {
-    resetBtn.addEventListener("click", () => {
-      resultsSection.style.display = "none";
-      fileInput.value = "";
-      uploadArea.classList.remove("has-file");
-      uploadArea.querySelector(".upload-label").textContent =
-        "Drag and drop your file here";
-    });
-  }
-
-  // Hero Button Click
-  if (heroDetectorBtn) {
-    heroDetectorBtn.addEventListener("click", () => {
-      window.scrollTo({
-        top: document.getElementById("detector").offsetTop - 100,
-        behavior: "smooth",
-      });
-    });
-  }
-});
-
-    </script>
   </body>
 </html>
